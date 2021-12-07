@@ -1,0 +1,9 @@
+name: Exitria-Hologram-System
+version: 06-12-21
+main: hologram.exitria.Hologram
+api-version: 1.17
+authors: [ CripeHD ]
+depend:
+  - Exitria-SystemAPI
+commands:
+  hologram:
