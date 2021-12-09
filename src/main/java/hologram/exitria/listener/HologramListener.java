@@ -36,17 +36,4 @@ public class HologramListener extends Listener {
         hologramManager.changeWorld(event.getPlayer(), event.getFrom());
     }
 
-    @EventHandler
-    public void onPickUp(EntityPickupItemEvent event) {
-        if (event.getItem().getCustomName() != null && event.getItem().getCustomName().equals("&6HOLOGRAM&5Item"))
-            event.setCancelled(true);
-    }
-
-    @EventHandler
-    public void onDespawn(ItemDespawnEvent event) {
-        if (event.getEntity().hasGravity()) return;
-        if (!SystemUtils.isDisplayname(event.getEntity().getItemStack(), "&6HOLOGRAM&5Item", false)) return;
-        event.setCancelled(true);
-    }
-
 }

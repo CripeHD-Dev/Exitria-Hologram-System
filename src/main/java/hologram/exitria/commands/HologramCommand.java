@@ -162,7 +162,7 @@ public class HologramCommand extends PlayerCommand {
             sendError(player, "Dieses Hologram existiert nicht.");
             return;
         }
-        if (hologramManager.getHologramGroup(args[1]).getItem() == null) {
+        if (hologramManager.getHologramGroup(args[1]).getMaterial() == null) {
             sendError(player, "Dieses Hologram besitzt kein Icon.");
             return;
         }

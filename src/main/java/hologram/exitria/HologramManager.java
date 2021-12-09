@@ -6,16 +6,21 @@ import net.minecraft.network.chat.ChatMessage;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.PacketPlayOutEntityDestroy;
 import net.minecraft.network.protocol.game.PacketPlayOutEntityMetadata;
+import net.minecraft.network.protocol.game.PacketPlayOutSpawnEntity;
 import net.minecraft.network.protocol.game.PacketPlayOutSpawnEntityLiving;
 import net.minecraft.server.level.WorldServer;
 import net.minecraft.world.entity.decoration.EntityArmorStand;
+import net.minecraft.world.entity.item.EntityItem;
+import net.minecraft.world.item.ItemStack;
 import org.bukkit.*;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_17_R1.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
+import systemapi.exitria.utils.builder.ItemBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -119,7 +124,27 @@ public class HologramManager {
     }
 
     public void setIcon(final String name, final Material material) {
-        getHologramGroup(name).setMaterial(material);
+        HologramGroup group = getHologramGroup(name);
+
+        for (Player players : group.getPlayersIcon().keySet())
+            removeIcon(players, group);
+        group.setMaterial(material);
+        WorldServer worldServer = ((CraftWorld) group.getLocation().getWorld()).getHandle();
+        if (group.getMaterial() != null) {
+            for (Player players : group.getPlayersLines().keySet()) {
+                ItemStack itemStack = CraftItemStack.asNMSCopy(new ItemBuilder(group.getMaterial()).build());
+                EntityItem item = new EntityItem(worldServer, group.getLocation().clone().getX(), group.getLocation().clone().getY() + 0.5, group.getLocation().clone().getZ(), itemStack);
+                item.setLocation(group.getLocation().clone().getX(), group.getLocation().clone().getY() + 0.5, group.getLocation().clone().getZ(), 0, 0);
+                item.setNoGravity(true);
+
+                PacketPlayOutSpawnEntity entity = new PacketPlayOutSpawnEntity(item);
+                PacketPlayOutEntityMetadata data = new PacketPlayOutEntityMetadata(item.getId(), item.getDataWatcher(), true);
+                group.getPlayersIcon().put(players, item.getId());
+                sendPacket(players, entity);
+                sendPacket(players, data);
+            }
+        }
+
         Bukkit.getScheduler().runTaskAsynchronously(hologram, new Runnable() {
             @Override
             public void run() {
@@ -130,7 +155,10 @@ public class HologramManager {
     }
 
     public void removeIcon(final String name) {
-        getHologramGroup(name).removeIcon();
+        HologramGroup group = getHologramGroup(name);
+        for (Player players : group.getPlayersIcon().keySet())
+            removeIcon(players, group);
+
         Bukkit.getScheduler().runTaskAsynchronously(hologram, new Runnable() {
             @Override
             public void run() {
@@ -140,8 +168,16 @@ public class HologramManager {
         });
     }
 
+    public void removeIcon(Player player, HologramGroup hologramGroup) {
+        if (!hologramGroup.getPlayersIcon().containsKey(player)) return;
+        PacketPlayOutEntityDestroy destroy = new PacketPlayOutEntityDestroy(hologramGroup.getPlayersIcon().get(player));
+        sendPacket(player, destroy);
+    }
+
     public void delete(final String name) {
-        getHologramGroup(name).removeIcon();
+        HologramGroup group = getHologramGroup(name);
+        for (Player players : group.getPlayersIcon().keySet())
+            removeIcon(players, group);
         for (Player player : Bukkit.getOnlinePlayers())
             removeHologram(getHologramGroup(name), player);
         holograms.remove(name.toLowerCase());
@@ -192,9 +228,26 @@ public class HologramManager {
             sendPacket(player, packetPlayOutSpawnEntityLiving);
             sendPacket(player, entityMetadata);
         }
+
+        // Spawn Icon
+        if (hologramGroup.getMaterial() != null) {
+
+            ItemStack itemStack = CraftItemStack.asNMSCopy(new ItemBuilder(hologramGroup.getMaterial()).build());
+            EntityItem item = new EntityItem(worldServer, hologramGroup.getLocation().clone().getX(), hologramGroup.getLocation().clone().getY() + 0.5, hologramGroup.getLocation().clone().getZ(), itemStack);
+            item.setLocation(hologramGroup.getLocation().clone().getX(), hologramGroup.getLocation().clone().getY() + 0.5, hologramGroup.getLocation().clone().getZ(), 0, 0);
+            item.setNoGravity(true);
+
+            PacketPlayOutSpawnEntity entity = new PacketPlayOutSpawnEntity(item);
+            PacketPlayOutEntityMetadata data = new PacketPlayOutEntityMetadata(item.getId(), item.getDataWatcher(), true);
+            hologramGroup.getPlayersIcon().put(player, item.getId());
+
+            sendPacket(player, entity);
+            sendPacket(player, data);
+        }
     }
 
     public void removeHologram(final HologramGroup hologramGroup, final Player player) {
+        removeIcon(player, hologramGroup);
         PacketPlayOutEntityDestroy entityDestroy;
         for (int id : hologramGroup.getList(player)) {
             entityDestroy = new PacketPlayOutEntityDestroy(id);
@@ -213,7 +266,7 @@ public class HologramManager {
         for (Player player : Bukkit.getOnlinePlayers())
             removeAllHolograms(player);
         for (HologramGroup hologramGroup : holograms.values())
-            hologramGroup.removeIcon();
+            hologramGroup.setMaterial(null);
     }
 
     private void sendPacket(final Player player, final Packet<?> packet) {
