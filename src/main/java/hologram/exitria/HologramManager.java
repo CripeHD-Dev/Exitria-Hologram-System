@@ -16,9 +16,9 @@ import org.bukkit.*;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_17_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_18_R1.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import systemapi.exitria.utils.builder.ItemBuilder;
 
@@ -61,14 +61,14 @@ public class HologramManager {
         }
         for (Player players : Bukkit.getOnlinePlayers()) {
             for (HologramGroup hologramGroup : holograms.values()) {
-                sendHologram(hologramGroup, players);
+                if (hologramGroup.getLocation().getWorld() == players.getWorld()) sendHologram(hologramGroup, players);
             }
         }
         hologram.getLogger().info(holograms.size() + " Hologramm[e] wurden geladen.");
     }
 
-    public void createHologram(final String name, final String text, final Location location) {
-        final HologramGroup hologramGroup = new HologramGroup(name, location);
+    public void createHologram(String name, String text, Location location) {
+        HologramGroup hologramGroup = new HologramGroup(name, location);
         hologramGroup.addLine(new HologramData(text));
         holograms.put(name.toLowerCase(), hologramGroup);
         Bukkit.getScheduler().runTaskAsynchronously(hologram, new Runnable() {
@@ -87,7 +87,7 @@ public class HologramManager {
             sendHologram(hologramGroup, players);
     }
 
-    public void addLine(final String name, final String text) {
+    public void addLine(String name, String text) {
         getHologramGroup(name).addLine(new HologramData(text));
         for (Player players : Bukkit.getOnlinePlayers()) {
             removeHologram(getHologramGroup(name), players);
@@ -102,7 +102,7 @@ public class HologramManager {
         });
     }
 
-    public void removeLine(final String name) {
+    public void removeLine(String name) {
         getHologramGroup(name).removeLine();
 
         // delete if emtpy
@@ -123,7 +123,7 @@ public class HologramManager {
         }
     }
 
-    public void setIcon(final String name, final Material material) {
+    public void setIcon(String name, Material material) {
         HologramGroup group = getHologramGroup(name);
 
         for (Player players : group.getPlayersIcon().keySet())
@@ -134,12 +134,12 @@ public class HologramManager {
             for (Player players : group.getPlayersLines().keySet()) {
                 ItemStack itemStack = CraftItemStack.asNMSCopy(new ItemBuilder(group.getMaterial()).build());
                 EntityItem item = new EntityItem(worldServer, group.getLocation().clone().getX(), group.getLocation().clone().getY() + 0.5, group.getLocation().clone().getZ(), itemStack);
-                item.setLocation(group.getLocation().clone().getX(), group.getLocation().clone().getY() + 0.5, group.getLocation().clone().getZ(), 0, 0);
-                item.setNoGravity(true);
+                item.a(group.getLocation().clone().getX(), group.getLocation().clone().getY() + 0.5, group.getLocation().clone().getZ(), 0, 0);
+                item.e(true); // No Gravity
 
                 PacketPlayOutSpawnEntity entity = new PacketPlayOutSpawnEntity(item);
-                PacketPlayOutEntityMetadata data = new PacketPlayOutEntityMetadata(item.getId(), item.getDataWatcher(), true);
-                group.getPlayersIcon().put(players, item.getId());
+                PacketPlayOutEntityMetadata data = new PacketPlayOutEntityMetadata(item.ae(), item.ai(), true);
+                group.getPlayersIcon().put(players, item.ae());
                 sendPacket(players, entity);
                 sendPacket(players, data);
             }
@@ -154,7 +154,7 @@ public class HologramManager {
         });
     }
 
-    public void removeIcon(final String name) {
+    public void removeIcon(String name) {
         HologramGroup group = getHologramGroup(name);
         for (Player players : group.getPlayersIcon().keySet())
             removeIcon(players, group);
@@ -174,7 +174,7 @@ public class HologramManager {
         sendPacket(player, destroy);
     }
 
-    public void delete(final String name) {
+    public void delete(String name) {
         HologramGroup group = getHologramGroup(name);
         for (Player players : group.getPlayersIcon().keySet())
             removeIcon(players, group);
@@ -190,41 +190,35 @@ public class HologramManager {
         });
     }
 
-    public void changeWorld(final Player player, final World oldWorld) {
+    public void changeWorld(Player player, World oldWorld) {
         for (HologramGroup hologramGroup : holograms.values()) {
-            if (oldWorld == hologramGroup.getLocation().getWorld())
-                removeHologram(hologramGroup, player);
-            else if (player.getWorld() == hologramGroup.getLocation().getWorld())
-                sendHologram(hologramGroup, player);
+            if (oldWorld == hologramGroup.getLocation().getWorld()) removeHologram(hologramGroup, player);
+            else if (player.getWorld() == hologramGroup.getLocation().getWorld()) sendHologram(hologramGroup, player);
         }
     }
 
-    public void sendAll(final Player player) {
+    public void sendAll(Player player) {
         for (HologramGroup hologramGroup : holograms.values())
-            if (player.getWorld() == hologramGroup.getLocation().getWorld())
-                sendHologram(hologramGroup, player);
+            if (player.getWorld() == hologramGroup.getLocation().getWorld()) sendHologram(hologramGroup, player);
     }
 
-    public void sendHologram(final HologramGroup hologramGroup, final Player player) {
-        final WorldServer worldServer = ((CraftWorld) hologramGroup.getLocation().getWorld()).getHandle();
+    public void sendHologram(HologramGroup hologramGroup, Player player) {
+        WorldServer worldServer = ((CraftWorld) hologramGroup.getLocation().getWorld()).getHandle();
         EntityArmorStand armorStand;
         PacketPlayOutSpawnEntityLiving packetPlayOutSpawnEntityLiving;
         PacketPlayOutEntityMetadata entityMetadata;
         float height = 2f;
         hologramGroup.addPlayer(player);
         for (int i = 0; i < hologramGroup.getHolograms().size(); i++) {
-            armorStand = new EntityArmorStand(worldServer,
-                    hologramGroup.getLocation().clone().getX(),
-                    hologramGroup.getLocation().clone().getY() - height,
-                    hologramGroup.getLocation().clone().getZ());
-            armorStand.setCustomName(new ChatMessage(getLine(hologramGroup.getHolograms().get(i), player)));
-            armorStand.setCustomNameVisible(true);
-            armorStand.setInvisible(true);
-            armorStand.setNoGravity(true);
+            armorStand = new EntityArmorStand(worldServer, hologramGroup.getLocation().clone().getX(), hologramGroup.getLocation().clone().getY() - height, hologramGroup.getLocation().clone().getZ());
+            armorStand.a(new ChatMessage(getLine(hologramGroup.getHolograms().get(i), player))); // Customname
+            armorStand.n(true); // CustomnameVisible
+            armorStand.j(true); // Invisible
+            armorStand.e(true); // No Gravity
             height += 0.28;
             packetPlayOutSpawnEntityLiving = new PacketPlayOutSpawnEntityLiving(armorStand);
-            entityMetadata = new PacketPlayOutEntityMetadata(armorStand.getId(), armorStand.getDataWatcher(), false);
-            hologramGroup.getList(player).add(armorStand.getId());
+            entityMetadata = new PacketPlayOutEntityMetadata(armorStand.ae(), armorStand.ai(), false);
+            hologramGroup.getList(player).add(armorStand.ae());
             sendPacket(player, packetPlayOutSpawnEntityLiving);
             sendPacket(player, entityMetadata);
         }
@@ -234,19 +228,19 @@ public class HologramManager {
 
             ItemStack itemStack = CraftItemStack.asNMSCopy(new ItemBuilder(hologramGroup.getMaterial()).build());
             EntityItem item = new EntityItem(worldServer, hologramGroup.getLocation().clone().getX(), hologramGroup.getLocation().clone().getY() + 0.5, hologramGroup.getLocation().clone().getZ(), itemStack);
-            item.setLocation(hologramGroup.getLocation().clone().getX(), hologramGroup.getLocation().clone().getY() + 0.5, hologramGroup.getLocation().clone().getZ(), 0, 0);
-            item.setNoGravity(true);
+            item.a(hologramGroup.getLocation().clone().getX(), hologramGroup.getLocation().clone().getY() + 0.5, hologramGroup.getLocation().clone().getZ(), 0, 0);
+            item.e(true); // No Gravity
 
             PacketPlayOutSpawnEntity entity = new PacketPlayOutSpawnEntity(item);
-            PacketPlayOutEntityMetadata data = new PacketPlayOutEntityMetadata(item.getId(), item.getDataWatcher(), true);
-            hologramGroup.getPlayersIcon().put(player, item.getId());
+            PacketPlayOutEntityMetadata data = new PacketPlayOutEntityMetadata(item.ae(), item.ai(), true);
+            hologramGroup.getPlayersIcon().put(player, item.ae());
 
             sendPacket(player, entity);
             sendPacket(player, data);
         }
     }
 
-    public void removeHologram(final HologramGroup hologramGroup, final Player player) {
+    public void removeHologram(HologramGroup hologramGroup, Player player) {
         removeIcon(player, hologramGroup);
         PacketPlayOutEntityDestroy entityDestroy;
         for (int id : hologramGroup.getList(player)) {
@@ -256,10 +250,9 @@ public class HologramManager {
         hologramGroup.removePlayer(player);
     }
 
-    public void removeAllHolograms(final Player player) {
+    public void removeAllHolograms(Player player) {
         for (HologramGroup hologramGroup : holograms.values())
-            if (hologramGroup.containsPlayer(player))
-                removeHologram(hologramGroup, player);
+            if (hologramGroup.containsPlayer(player)) removeHologram(hologramGroup, player);
     }
 
     public void disable() {
@@ -269,19 +262,19 @@ public class HologramManager {
             hologramGroup.setMaterial(null);
     }
 
-    private void sendPacket(final Player player, final Packet<?> packet) {
-        ((CraftPlayer) player).getHandle().b.sendPacket(packet);
+    private void sendPacket(Player player, Packet<?> packet) {
+        ((CraftPlayer) player).getHandle().b.a(packet);
     }
 
-    public HologramGroup getHologramGroup(final String name) {
+    public HologramGroup getHologramGroup(String name) {
         return holograms.get(name.toLowerCase());
     }
 
-    public boolean existHologram(final String name) {
+    public boolean existHologram(String name) {
         return holograms.containsKey(name.toLowerCase());
     }
 
-    private String getLine(final HologramData hologramData, final Player player) {
+    private String getLine(HologramData hologramData, Player player) {
         return ChatColor.translateAlternateColorCodes('&', hologramData.getDisplay().replace("%player%", player.getName()));
     }
 

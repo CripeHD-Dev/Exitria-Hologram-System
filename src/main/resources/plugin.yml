@@ -1,5 +1,5 @@
 name: Exitria-Hologram-System
-version: 09-12-21
+version: 20-01-22
 main: hologram.exitria.Hologram
 api-version: 1.17
 authors: [ CripeHD ]

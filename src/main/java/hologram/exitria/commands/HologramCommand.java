@@ -44,13 +44,13 @@ public class HologramCommand extends PlayerCommand {
             case 2:
                 switch (args[0].toLowerCase()) {
                     case "removeicon":
-                        removeicon(player, args);
+                        removeIcon(player, args);
                         break;
                     case "delete":
                         deleteHologram(player, args);
                         break;
                     case "removeline":
-                        removeline(player, args);
+                        removeLine(player, args);
                         break;
                     default:
                         sendUsage(player);
@@ -60,13 +60,13 @@ public class HologramCommand extends PlayerCommand {
             case 3:
                 switch (args[0].toLowerCase()) {
                     case "seticon":
-                        seticon(player, args);
+                        setIcon(player, args);
                         break;
                     case "create":
                         createHologram(player, args);
                         break;
                     case "addline":
-                        addline(player, args);
+                        addLine(player, args);
                         break;
                     default:
                         sendUsage(player);
@@ -80,7 +80,7 @@ public class HologramCommand extends PlayerCommand {
                             createHologram(player, args);
                             break;
                         case "addline":
-                            addline(player, args);
+                            addLine(player, args);
                             break;
                         default:
                             sendUsage(player);
@@ -143,7 +143,7 @@ public class HologramCommand extends PlayerCommand {
         sendMessage(player, "Das Hologram wurde gelöscht.");
     }
 
-    private void seticon(Player player, String[] args) {
+    private void setIcon(Player player, String[] args) {
         if (!hologramManager.existHologram(args[1])) {
             sendError(player, "Dieses Hologram existiert nicht.");
             return;
@@ -157,7 +157,7 @@ public class HologramCommand extends PlayerCommand {
         sendMessage(player, "Das Icon wurde gesetzt.");
     }
 
-    private void removeicon(Player player, String[] args) {
+    private void removeIcon(Player player, String[] args) {
         if (!hologramManager.existHologram(args[1])) {
             sendError(player, "Dieses Hologram existiert nicht.");
             return;
@@ -170,7 +170,7 @@ public class HologramCommand extends PlayerCommand {
         sendMessage(player, "Das Icon wurde entfernt.");
     }
 
-    private void addline(Player player, String[] args) {
+    private void addLine(Player player, String[] args) {
         if (!hologramManager.existHologram(args[1])) {
             sendError(player, "Dieses Hologram existiert nicht.");
             return;
@@ -180,7 +180,7 @@ public class HologramCommand extends PlayerCommand {
         sendMessage(player, "Eine neue Zeile wurde hinzugefügt.");
     }
 
-    private void removeline(Player player, String[] args) {
+    private void removeLine(Player player, String[] args) {
         if (!hologramManager.existHologram(args[1])) {
             sendError(player, "Dieses Hologram existiert nicht.");
             return;

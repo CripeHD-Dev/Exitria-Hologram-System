@@ -22,13 +22,13 @@ public class HologramListener extends Listener {
     }
 
     @EventHandler
-    public void onJoin(PlayerJoinEvent e) {
-        hologramManager.sendAll(e.getPlayer());
+    public void onJoin(PlayerJoinEvent event) {
+        hologramManager.sendAll(event.getPlayer());
     }
 
     @EventHandler
-    public void onQuit(PlayerQuitEvent e) {
-        hologramManager.removeAllHolograms(e.getPlayer());
+    public void onQuit(PlayerQuitEvent event) {
+        hologramManager.removeAllHolograms(event.getPlayer());
     }
 
     @EventHandler
